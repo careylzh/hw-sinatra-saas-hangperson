@@ -12,13 +12,14 @@ class HangpersonApp < Sinatra::Base
 
   enable :sessions
   register Sinatra::Flash
-  
   before do
     @game = session[:game] || HangpersonGame.new('')
   end
   
   after do
     session[:game] = @game
+    @wrong = 0
+    
   end
   
   # These two routes are good examples of Sinatra syntax
@@ -32,11 +33,15 @@ class HangpersonApp < Sinatra::Base
   end
   
   post '/create' do
+    # initialize the flash 
+    flash[:message] = ''
+    flash[:wrong_guesses] = ''
+    flash[:word_with_guesses] = ''
     # NOTE: don't change next line - it's needed by autograder!
     word = params[:word] || HangpersonGame.get_random_word
     # NOTE: don't change previous line - it's needed by autograder!
-
     @game = HangpersonGame.new(word)
+    session[:game] =@game
     redirect '/show'
   end
   
@@ -45,28 +50,40 @@ class HangpersonApp < Sinatra::Base
   # If a guess is invalid, set flash[:message] to "Invalid guess."
   post '/guess' do
     letter = params[:guess].to_s[0]
-    ### YOUR CODE HERE ###
-    redirect '/show'
+   
+    
+     #check if it's alreay been guessed 
+     if @game.guess(letter) == false
+        flash[:message] = "You have already used that letter."
+        #check if it's wrong
+     elsif @game.wrong_guesses.include? letter
+       flash[:message] = "Invalid guess"
+     end
+    #show the game state
+    flash[:wrong_guesses] = @game.wrong_guesses
+    flash[:word_with_guesses] = @game.word_with_guesses
+     if @game.check_win_or_lose == :win
+        redirect '/win'
+     elsif @game.check_win_or_lose == :play 
+        redirect '/show'
+     elsif @game.check_win_or_lose == :lose
+        redirect 'lose'
+     end
   end
   
-  # Everytime a guess is made, we should eventually end up at this route.
-  # Use existing methods in HangpersonGame to check if player has
-  # won, lost, or neither, and take the appropriate action.
-  # Notice that the show.erb template expects to use the instance variables
-  # wrong_guesses and word_with_guesses from @game.
   get '/show' do
-    ### YOUR CODE HERE ###
-    erb :show # You may change/remove this line
+   
+    erb :show 
   end
   
   get '/win' do
-    ### YOUR CODE HERE ###
-    erb :win # You may change/remove this line
+    
+    erb :win
   end
   
   get '/lose' do
-    ### YOUR CODE HERE ###
-    erb :lose # You may change/remove this line
+  
+    erb :lose 
   end
   
 end
